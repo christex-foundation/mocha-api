@@ -13,6 +13,10 @@ export default async function handler(request, response) {
     response.status(400).send({ error: 'phone number is required' });
   }
 
+  if (typeof request.query.phone !== 'string') {
+    response.status(400).send({ error: 'phone number must be a string' });
+  }
+
   // get associated wallet address for number
   const { tokens } = await fetchTokenAddresses();
   const mintAccounts = parseTokenMintAccounts(tokens);
@@ -20,18 +24,23 @@ export default async function handler(request, response) {
   const tokenResponse = parseTokenResponse(tokens, metadata);
   const smsBody = buildSMSBody(tokenResponse);
 
+  // @ts-ignore
   await sendSMS(request.query.phone, smsBody);
 
   response.status(200).send({});
 }
 
 /**
- * @returns {Promise<{tokens: {
-  tokenAccount: string
-  mint: string
-  amount: number
-  decimals: number
-}[]}>}
+ * @typedef {{tokens: {
+        tokenAccount: string;
+        mint: string;
+        amount: number;
+        decimals: number;
+    }[];}} heliusBalanceResponse
+ */
+
+/**
+ * @returns {Promise<heliusBalanceResponse>}
  */
 async function fetchTokenAddresses() {
   const response = await fetch(
@@ -42,6 +51,10 @@ async function fetchTokenAddresses() {
   return await response.json();
 }
 
+/**
+ * @param {string[]} mintAccounts
+ * @returns {Promise<any>}
+ */
 async function fetchMetadata(mintAccounts) {
   const response = await fetch(
     `https://api.helius.xyz/v0/token-metadata?api-key=${process.env.HELIUS_API_KEY}`,
@@ -60,7 +73,7 @@ async function fetchMetadata(mintAccounts) {
 }
 
 /**
- * @param {*} phone
+ * @param {string} phone
  */
 async function sendSMS(phone, body) {
   const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
