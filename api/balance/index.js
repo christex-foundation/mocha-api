@@ -1,5 +1,8 @@
 //@ts-check
 
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 /**
  * @param {import('@vercel/node').VercelRequest} request
  * @param {import('@vercel/node').VercelResponse} response
@@ -43,7 +46,7 @@ export default async function handler(request, response) {
  */
 async function fetchTokenAddresses() {
   const response = await fetch(
-    'https://api.helius.xyz/v0/addresses/3AqsxnVmsH3TyoeRFxMSDvDmHTsySoLnYtVAWMk7RYff/balances?api-key=9b6fad62-e5fc-4eb6-8188-8fb3c3b1fdae',
+    `https://api.helius.xyz/v0/addresses/3AqsxnVmsH3TyoeRFxMSDvDmHTsySoLnYtVAWMk7RYff/balances?api-key=${process.env.HELIUS_API_KEY}`,
     { method: 'GET' },
   );
 
@@ -52,7 +55,7 @@ async function fetchTokenAddresses() {
 
 async function fetchMetadata(mintAccounts) {
   const response = await fetch(
-    'https://api.helius.xyz/v0/token-metadata?api-key=9b6fad62-e5fc-4eb6-8188-8fb3c3b1fdae',
+    `https://api.helius.xyz/v0/token-metadata?api-key=${process.env.HELIUS_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
