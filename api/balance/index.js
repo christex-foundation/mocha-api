@@ -22,6 +22,8 @@ export default async function handler(request, response) {
     };
   });
 
+  await sendSMS(request.query.phone);
+
   // send SMS
   response.status(200).json(tokenResponse);
 }
@@ -58,4 +60,11 @@ async function fetchMetadata(mintAccounts) {
   );
 
   return await response.json();
+}
+
+/**
+ * @param {string} phone
+ */
+function sendSMS(phone) {
+  throw new Error('Function not implemented.');
 }
