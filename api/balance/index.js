@@ -1,5 +1,7 @@
 //@ts-check
 import * as dotenv from 'dotenv';
+import twilio from 'twilio';
+
 dotenv.config();
 
 /**
@@ -22,7 +24,11 @@ export default async function handler(request, response) {
     };
   });
 
-  await sendSMS(request.query.phone);
+  const smsBody = tokenResponse
+    .map((token) => `${token.symbol}: ${token.amount / 10 ** token.decimals}`)
+    .join('\n');
+
+  await sendSMS('+23276242792', smsBody);
 
   // send SMS
   response.status(200).json(tokenResponse);
@@ -63,8 +69,14 @@ async function fetchMetadata(mintAccounts) {
 }
 
 /**
- * @param {string} phone
+ * @param {*} phone
  */
-function sendSMS(phone) {
-  throw new Error('Function not implemented.');
+async function sendSMS(phone, body) {
+  const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+  await twilioClient.messages.create({
+    body,
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SID,
+    to: phone,
+  });
 }
