@@ -61,7 +61,7 @@ function filterTokens(tokens) {
  */
 async function fetchTokenAddresses(address) {
   const response = await fetch(
-    `https://api.helius.xyz/v0/addresses/${address}/balances?api-key=${process.env.HELIUS_API_KEY}`,
+    `${process.env.HELIUS_API_URL}/v0/addresses/${address}/balances?api-key=${process.env.HELIUS_API_KEY}`,
     { method: 'GET' },
   );
 
@@ -74,7 +74,7 @@ async function fetchTokenAddresses(address) {
  */
 async function fetchMetadata(mintAccounts) {
   const response = await fetch(
-    `https://api.helius.xyz/v0/token-metadata?api-key=${process.env.HELIUS_API_KEY}`,
+    `${process.env.HELIUS_API_URL}/v0/token-metadata?api-key=${process.env.HELIUS_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
