@@ -16,11 +16,14 @@ export default async function handler(request, response) {
   const address = await fetchWalletAddress(phone);
   validateAddress(address, response);
 
-  const { tokens } = await fetchTokenAddresses(address);
+  const { tokens, nativeBalance } = await fetchTokenAddresses(address);
   const filteredTokens = filterTokens(tokens);
   const mintAccounts = parseTokenMintAccounts(filteredTokens);
   const metadata = await fetchMetadata(mintAccounts);
-  const tokenResponse = parseTokenResponse(filteredTokens, metadata);
+  const tokenResponse = addNativeBalance(
+    parseTokenResponse(filteredTokens, metadata),
+    nativeBalance,
+  );
 
   if (display === 'SMS') {
     const smsBody = buildSMSBody(tokenResponse);
@@ -28,6 +31,11 @@ export default async function handler(request, response) {
   }
 
   response.status(200).send({ tokens: tokenResponse });
+}
+
+function addNativeBalance(tokenResponse, nativeBalance) {
+  tokenResponse = [...tokenResponse, { symbol: 'SOL', amount: nativeBalance, decimals: 9 }];
+  return tokenResponse;
 }
 
 /**
