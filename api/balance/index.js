@@ -9,12 +9,30 @@ dotenv.config();
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
+  // get associated wallet address for number
   const { tokens } = await fetchTokenAddresses();
-  const mintAccounts = tokens.map((token) => token.mint);
-
+  const mintAccounts = getTokenMintAccounts(tokens);
   const metadata = await fetchMetadata(mintAccounts);
+  const tokenResponse = buildTokenResponse(tokens, metadata);
+  const smsBody = buildSMSBody(tokenResponse);
 
-  const tokenResponse = tokens.map((token) => {
+  await sendSMS('+23276242792', smsBody);
+
+  response.status(200).send({});
+}
+
+function getTokenMintAccounts(tokens) {
+  return tokens.map((token) => token.mint);
+}
+
+function buildSMSBody(tokenResponse) {
+  return tokenResponse
+    .map((token) => `${token.symbol}: ${token.amount / 10 ** token.decimals}`)
+    .join('\n');
+}
+
+function buildTokenResponse(tokens, metadata) {
+  return tokens.map((token) => {
     const tokenMetadata = metadata.find((meta) => meta.account == token.mint);
 
     return {
@@ -23,15 +41,6 @@ export default async function handler(request, response) {
       symbol: tokenMetadata.onChainMetadata.metadata.data?.symbol,
     };
   });
-
-  const smsBody = tokenResponse
-    .map((token) => `${token.symbol}: ${token.amount / 10 ** token.decimals}`)
-    .join('\n');
-
-  await sendSMS('+23276242792', smsBody);
-
-  // send SMS
-  response.status(200).json(tokenResponse);
 }
 
 /**
