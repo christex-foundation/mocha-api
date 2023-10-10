@@ -8,7 +8,8 @@ dotenv.config();
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
-  let phone = request.query.phone.replace(/\D/g, '');
+  const phone = request.query.phone.replace(/\D/g, '');
+  const display = request.query.display;
 
   if (!phone) {
     response.status(400).send({ error: 'phone number is required' });
@@ -30,11 +31,13 @@ export default async function handler(request, response) {
   const mintAccounts = parseTokenMintAccounts(filteredTokens);
   const metadata = await fetchMetadata(mintAccounts);
   const tokenResponse = parseTokenResponse(filteredTokens, metadata);
-  const smsBody = buildSMSBody(tokenResponse);
 
-  await sendSMS(request.query.phone, smsBody);
+  if (display === 'SMS') {
+    const smsBody = buildSMSBody(tokenResponse);
+    await sendSMS(request.query.phone, smsBody);
+  }
 
-  response.status(200).send({});
+  response.status(200).send({ tokens: tokenResponse });
 }
 
 /**
