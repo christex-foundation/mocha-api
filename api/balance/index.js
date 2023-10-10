@@ -1,5 +1,4 @@
 //@ts-check
-
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -8,31 +7,22 @@ dotenv.config();
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
-  // make request to addresses endpoint
   const { tokens } = await fetchTokenAddresses();
-  // with response get all the mint accounts
   const mintAccounts = tokens.map((token) => token.mint);
-  // make request to metadata endpoint
-  const metadata = await fetchMetadata(mintAccounts);
-  // merge both responses and send
-  const tokenResponse = tokens
-    .map((token) => {
-      return {
-        ...token,
-        tokenMetadata: metadata.find((meta) => {
-          return meta.account == token.mint;
-        }),
-      };
-    })
-    .map((token) => {
-      return {
-        tokenName: token.tokenMetadata.onChainMetadata.metadata.data?.name,
-        tokenSymbol: token.tokenMetadata.onChainMetadata.metadata.data?.symbol,
-        tokenAmount: token.amount,
-        tokenDecimals: token.decimals,
-      };
-    });
 
+  const metadata = await fetchMetadata(mintAccounts);
+
+  const tokenResponse = tokens.map((token) => {
+    const tokenMetadata = metadata.find((meta) => meta.account == token.mint);
+
+    return {
+      ...token,
+      name: tokenMetadata.onChainMetadata.metadata.data?.name,
+      symbol: tokenMetadata.onChainMetadata.metadata.data?.symbol,
+    };
+  });
+
+  // send SMS
   response.status(200).json(tokenResponse);
 }
 
