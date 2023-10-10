@@ -27,15 +27,23 @@ export default async function handler(request, response) {
 
   // get associated wallet address for number
   const { tokens } = await fetchTokenAddresses(address);
-  const mintAccounts = parseTokenMintAccounts(tokens);
+  const filteredTokens = filterTokens(tokens);
+  const mintAccounts = parseTokenMintAccounts(filteredTokens);
   const metadata = await fetchMetadata(mintAccounts);
-  const tokenResponse = parseTokenResponse(tokens, metadata);
+  const tokenResponse = parseTokenResponse(filteredTokens, metadata);
   const smsBody = buildSMSBody(tokenResponse);
 
   // @ts-ignore
   await sendSMS(request.query.phone, smsBody);
 
   response.status(200).send({});
+}
+
+/**
+ * @description filter out tokens with 0 decimals and 0 amount
+ */
+function filterTokens(tokens) {
+  return tokens.filter((token) => token.decimals !== 0 && token.amount > 0);
 }
 
 /**
@@ -98,21 +106,25 @@ function parseTokenMintAccounts(tokens) {
 }
 
 function buildSMSBody(tokenResponse) {
-  return tokenResponse
+  const body = tokenResponse
     .map((token) => `${token.symbol}: ${token.amount / 10 ** token.decimals}`)
     .join('\n');
+
+  return `Your current balance is:\n\n${body}`;
 }
 
 function parseTokenResponse(tokens, metadata) {
-  return tokens.map((token) => {
-    const tokenMetadata = metadata.find((meta) => meta.account == token.mint);
+  return tokens
+    .map((token) => {
+      const tokenMetadata = metadata.find((meta) => meta.account == token.mint);
 
-    return {
-      ...token,
-      name: tokenMetadata.onChainMetadata.metadata?.data?.name,
-      symbol: tokenMetadata.onChainMetadata.metadata?.data?.symbol,
-    };
-  });
+      return {
+        ...token,
+        name: tokenMetadata?.onChainMetadata?.metadata?.data?.name,
+        symbol: tokenMetadata?.onChainMetadata?.metadata?.data?.symbol,
+      };
+    })
+    .filter((token) => token.name);
 }
 
 async function fetchWalletAddress(phone) {
