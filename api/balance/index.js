@@ -1,4 +1,5 @@
 //@ts-check
+import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import twilio from 'twilio';
 
@@ -9,16 +10,23 @@ dotenv.config();
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
-  if (!request.query.phone) {
+  const phone = request.query.phone;
+  if (!phone) {
     response.status(400).send({ error: 'phone number is required' });
   }
 
-  if (typeof request.query.phone !== 'string') {
+  if (typeof phone !== 'string') {
     response.status(400).send({ error: 'phone number must be a string' });
   }
 
+  const address = await fetchWalletAddress(phone);
+
+  if (!address) {
+    response.status(400).send({ error: 'no address found for phone number' });
+  }
+
   // get associated wallet address for number
-  const { tokens } = await fetchTokenAddresses();
+  const { tokens } = await fetchTokenAddresses(address);
   const mintAccounts = parseTokenMintAccounts(tokens);
   const metadata = await fetchMetadata(mintAccounts);
   const tokenResponse = parseTokenResponse(tokens, metadata);
@@ -42,9 +50,9 @@ export default async function handler(request, response) {
 /**
  * @returns {Promise<heliusBalanceResponse>}
  */
-async function fetchTokenAddresses() {
+async function fetchTokenAddresses(address) {
   const response = await fetch(
-    `https://api.helius.xyz/v0/addresses/3AqsxnVmsH3TyoeRFxMSDvDmHTsySoLnYtVAWMk7RYff/balances?api-key=${process.env.HELIUS_API_KEY}`,
+    `https://api.helius.xyz/v0/addresses/${address}/balances?api-key=${process.env.HELIUS_API_KEY}`,
     { method: 'GET' },
   );
 
@@ -101,8 +109,16 @@ function parseTokenResponse(tokens, metadata) {
 
     return {
       ...token,
-      name: tokenMetadata.onChainMetadata.metadata.data?.name,
-      symbol: tokenMetadata.onChainMetadata.metadata.data?.symbol,
+      name: tokenMetadata.onChainMetadata.metadata?.data?.name,
+      symbol: tokenMetadata.onChainMetadata.metadata?.data?.symbol,
     };
   });
+}
+
+async function fetchWalletAddress(phone) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+  let { data: users, error } = await supabase.from('users').select('address').eq('phone', phone);
+
+  return users[0]?.address;
 }
