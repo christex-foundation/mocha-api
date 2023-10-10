@@ -8,7 +8,7 @@ dotenv.config();
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
-  let phone = request.query.phone;
+  let phone = request.query.phone.replace(/\D/g, '');
 
   if (!phone) {
     response.status(400).send({ error: 'phone number is required' });
@@ -17,8 +17,6 @@ export default async function handler(request, response) {
   if (typeof phone !== 'string') {
     response.status(400).send({ error: 'phone number must be a string' });
   }
-
-  phone = phone.replace(/\D/g, '');
 
   const address = await fetchWalletAddress(phone);
 
