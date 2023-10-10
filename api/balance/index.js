@@ -16,7 +16,7 @@ export default async function handler(request, response) {
   const tokenResponse = buildTokenResponse(tokens, metadata);
   const smsBody = buildSMSBody(tokenResponse);
 
-  await sendSMS('+23276242792', smsBody);
+  await sendSMS(request.query.phone || '+23276242792', smsBody);
 
   response.status(200).send({});
 }
