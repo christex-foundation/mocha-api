@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
-import twilio from 'twilio';
+import { fetchWalletAddress, sendSMS } from '../_utils.js';
 
 dotenv.config();
 
@@ -89,19 +88,6 @@ async function fetchMetadata(mintAccounts) {
   return await response.json();
 }
 
-/**
- * @param {string} phone
- */
-async function sendSMS(phone, body) {
-  const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-  await twilioClient.messages.create({
-    body,
-    messagingServiceSid: process.env.TWILIO_MESSAGING_SID,
-    to: phone,
-  });
-}
-
 function parseTokenMintAccounts(tokens) {
   return tokens.map((token) => token.mint);
 }
@@ -126,12 +112,4 @@ function parseTokenResponse(tokens, metadata) {
       };
     })
     .filter((token) => token.name);
-}
-
-async function fetchWalletAddress(phone) {
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-
-  let { data: users, error } = await supabase.from('users').select('address').eq('phone', phone);
-
-  return users[0]?.address;
 }
