@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { fetchWalletAddress, sendSMS } from '../_utils.js';
+import { fetchWalletAddress, sendSMS, validateAddress, validatePhoneNumber } from '../_utils.js';
 
 dotenv.config();
 
@@ -8,24 +8,14 @@ dotenv.config();
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
-  const phone = request.query.phone.replace(/\D/g, '');
   const display = request.query.display;
 
-  if (!phone) {
-    response.status(400).send({ error: 'phone number is required' });
-  }
-
-  if (typeof phone !== 'string') {
-    response.status(400).send({ error: 'phone number must be a string' });
-  }
+  const phone = request.query.phone.replace(/\D/g, '');
+  validatePhoneNumber(phone, response);
 
   const address = await fetchWalletAddress(phone);
+  validateAddress(address, response);
 
-  if (!address) {
-    response.status(400).send({ error: 'no address found for phone number' });
-  }
-
-  // get associated wallet address for number
   const { tokens } = await fetchTokenAddresses(address);
   const filteredTokens = filterTokens(tokens);
   const mintAccounts = parseTokenMintAccounts(filteredTokens);

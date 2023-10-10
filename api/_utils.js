@@ -26,3 +26,19 @@ export async function fetchWalletAddress(phone) {
 
   return users[0]?.address;
 }
+
+export function validatePhoneNumber(phone, response) {
+  if (!phone) {
+    response.status(400).send({ error: 'phone number is required' });
+  }
+
+  if (typeof phone !== 'string') {
+    response.status(400).send({ error: 'phone number must be a string' });
+  }
+}
+
+export function validateAddress(address, response) {
+  if (!address) {
+    response.status(400).send({ error: 'no address found for phone number' });
+  }
+}
