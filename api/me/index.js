@@ -11,8 +11,7 @@ export default async function handler(request, response) {
   const address = await fetchWalletAddress(phone);
   validateAddress(address, response);
 
-  await sendSMS(phone, `Your wallet address is:`);
-  await sendSMS(phone, `${address}`);
+  await sendSMS(phone, `Your wallet address is: \n\n${address}`);
 
   response.status(200).json({});
 }
