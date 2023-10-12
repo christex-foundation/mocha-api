@@ -27,6 +27,17 @@ export async function fetchWalletAddress(phone) {
   return users[0]?.address;
 }
 
+export async function fetchMultisigPda(phone) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+  let { data: users, error } = await supabase
+    .from('users')
+    .select('multisig_pda')
+    .eq('phone', phone);
+
+  return users[0]?.multisig_pda;
+}
+
 export function validatePhoneNumber(phone, response) {
   if (!phone) {
     response.status(400).send({ error: 'phone number is required' });
@@ -41,4 +52,13 @@ export function validateAddress(address, response) {
   if (!address) {
     response.status(400).send({ error: 'no address found for phone number' });
   }
+}
+
+export async function updateMultisigPda(phone, multisigPda) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+  let { data: users, error } = await supabase
+    .from('users')
+    .update({ multisig_pda: multisigPda })
+    .eq('phone', phone);
 }
