@@ -17,6 +17,7 @@ import BigNumber from 'bignumber.js';
 import {
   fetchMultisigPda,
   fetchWalletAddress,
+  sendSMS,
   updateMultisigPda,
   validateAddress,
   validatePhoneNumber,
@@ -48,11 +49,23 @@ export default async function handler(request, response) {
 
   const multisigPda = new PublicKey(await fetchMultisigPda(phone));
   if (!multisigPda) {
-    response
-      .status(400)
-      .send({
-        error:
-          'no multisig pda found for phone number, you need to register before attepmting a transfer',
-      });
+    response.status(400).send({
+      error:
+        'no multisig pda found for phone number, you need to register before attepmting a transfer',
+    });
   }
+
+  const tx = await executeTransfer(multisigPda, recipientAddress, amount);
+
+  const display = request.body.display;
+  if (display === 'SMS') {
+    const smsBody = `Transfer of ${amount} SOL to ${recipient} is complete. 
+
+View this transaction: https://explorer.solana.com/tx/${tx}?cluster=devnet`;
+    await sendSMS(phone, smsBody);
+  }
+
+  response.status(200).json({ tx });
 }
+
+async function executeTransfer(multisigPda, recipientAddress, amount) {}
