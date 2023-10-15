@@ -87,6 +87,28 @@ async function executeTransfer(connection, multisigPda, recipientAddress, amount
   });
 
   const transactionIndex = await getTransactionIndex(multisigPda);
+
+  const vaultTransactionCreateIx = multisig.instructions.vaultTransactionCreate({
+    multisigPda,
+    transactionIndex,
+    creator: squadsKeypair.publicKey,
+    vaultIndex: 0,
+    ephemeralSigners: 0,
+    transactionMessage,
+    memo: 'Transfer 0.01 SOL to creator',
+  });
+
+  const proposalCreateIx = multisig.instructions.proposalCreate({
+    multisigPda,
+    transactionIndex,
+    creator: squadsKeypair.publicKey,
+  });
+
+  const proposalApproveIx = multisig.instructions.proposalApprove({
+    multisigPda,
+    transactionIndex,
+    member: squadsKeypair.publicKey,
+  });
 }
 
 async function getTransactionIndex(connection, multisigPda) {
