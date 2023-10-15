@@ -1,35 +1,17 @@
 //@ts-check
-
 import { getKeypairFromEnvironment } from '@solana-developers/node-helpers';
-import {
-  Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-  TransactionMessage,
-  VersionedTransaction,
-  clusterApiUrl,
-} from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 
-import multisig from '@sqds/multisig';
-
-import BigNumber from 'bignumber.js';
 import {
+  executeTransfer,
   fetchMultisigPda,
   fetchWalletAddress,
-  getTransactionIndex,
   sendSMS,
-  updateMultisigPda,
   validateAddress,
   validatePhoneNumber,
 } from '../_utils.js';
 
 const squadsKeypair = await getKeypairFromEnvironment('SQUADS_WALLET');
-
-const { Permission, Permissions } = multisig.types;
-
-const { Multisig } = multisig.accounts;
 
 /**
  * @param {import('@vercel/node').VercelRequest} request
@@ -57,7 +39,13 @@ export default async function handler(request, response) {
     });
   }
 
-  const tx = await executeTransfer(connection, multisigPda, recipientAddress, amount);
+  const tx = await executeTransfer(
+    connection,
+    multisigPda,
+    recipientAddress,
+    amount,
+    squadsKeypair,
+  );
 
   const display = request.body.display;
   if (display === 'SMS') {
@@ -68,71 +56,4 @@ View this transaction: https://explorer.solana.com/tx/${tx}?cluster=devnet`;
   }
 
   response.status(200).json({ tx });
-}
-
-async function executeTransfer(connection, multisigPda, recipientAddress, amount) {
-  const [vaultPda] = multisig.getVaultPda({
-    multisigPda,
-    index: 0,
-  });
-
-  const instruction = SystemProgram.transfer({
-    fromPubkey: vaultPda,
-    toPubkey: new PublicKey(recipientAddress),
-    lamports: Number(amount) * LAMPORTS_PER_SOL,
-  });
-
-  const transactionMessage = new TransactionMessage({
-    payerKey: vaultPda,
-    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-    instructions: [instruction],
-  });
-
-  const transactionIndex = await getTransactionIndex(multisigPda);
-
-  const vaultTransactionCreateIx = multisig.instructions.vaultTransactionCreate({
-    multisigPda,
-    transactionIndex,
-    creator: squadsKeypair.publicKey,
-    vaultIndex: 0,
-    ephemeralSigners: 0,
-    transactionMessage,
-    memo: 'Transfer 0.01 SOL to creator',
-  });
-
-  const proposalCreateIx = multisig.instructions.proposalCreate({
-    multisigPda,
-    transactionIndex,
-    creator: squadsKeypair.publicKey,
-  });
-
-  const proposalApproveIx = multisig.instructions.proposalApprove({
-    multisigPda,
-    transactionIndex,
-    member: squadsKeypair.publicKey,
-  });
-
-  const message = new TransactionMessage({
-    payerKey: squadsKeypair.publicKey,
-    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-    instructions: [vaultTransactionCreateIx, proposalCreateIx, proposalApproveIx],
-  }).compileToV0Message();
-
-  const tx = new VersionedTransaction(message);
-
-  tx.sign([squadsKeypair]);
-
-  const signature = await connection.sendTransaction(tx, {
-    skipPreflight: true,
-  });
-
-  const vaultTransactionExecuteIx = await multisig.rpc.vaultTransactionExecute({
-    member: squadsKeypair.publicKey,
-    multisigPda,
-    transactionIndex,
-    connection,
-    feePayer: squadsKeypair,
-  });
-
-  return vaultTransactionExecuteIx;
 }

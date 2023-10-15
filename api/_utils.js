@@ -1,6 +1,15 @@
+import {
+  SystemProgram,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+  TransactionMessage,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import multisig from '@sqds/multisig';
 import { createClient } from '@supabase/supabase-js';
 import twilio from 'twilio';
+
+const { Multisig } = multisig.accounts;
 
 /**
  * @description send SMS message
@@ -63,8 +72,82 @@ export async function updateMultisigPda(phone, multisigPda) {
     .update({ multisig_pda: multisigPda })
     .eq('phone', phone);
 }
+
 export async function getTransactionIndex(connection, multisigPda) {
   const multisigAccount = await Multisig.fromAccountAddress(connection, multisigPda);
   const lastTransactionIndex = multisig.utils.toBigInt(multisigAccount.transactionIndex);
   return lastTransactionIndex + 1n;
+}
+
+export async function executeTransfer(
+  connection,
+  multisigPda,
+  recipientAddress,
+  amount,
+  squadsKeypair,
+) {
+  const [vaultPda] = multisig.getVaultPda({
+    multisigPda,
+    index: 0,
+  });
+
+  const instruction = SystemProgram.transfer({
+    fromPubkey: vaultPda,
+    toPubkey: new PublicKey(recipientAddress),
+    lamports: Number(amount) * LAMPORTS_PER_SOL,
+  });
+
+  const transactionMessage = new TransactionMessage({
+    payerKey: vaultPda,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [instruction],
+  });
+
+  const transactionIndex = await getTransactionIndex(multisigPda);
+
+  const vaultTransactionCreateIx = multisig.instructions.vaultTransactionCreate({
+    multisigPda,
+    transactionIndex,
+    creator: squadsKeypair.publicKey,
+    vaultIndex: 0,
+    ephemeralSigners: 0,
+    transactionMessage,
+    memo: 'Transfer 0.01 SOL to creator',
+  });
+
+  const proposalCreateIx = multisig.instructions.proposalCreate({
+    multisigPda,
+    transactionIndex,
+    creator: squadsKeypair.publicKey,
+  });
+
+  const proposalApproveIx = multisig.instructions.proposalApprove({
+    multisigPda,
+    transactionIndex,
+    member: squadsKeypair.publicKey,
+  });
+
+  const message = new TransactionMessage({
+    payerKey: squadsKeypair.publicKey,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [vaultTransactionCreateIx, proposalCreateIx, proposalApproveIx],
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(message);
+
+  tx.sign([squadsKeypair]);
+
+  const signature = await connection.sendTransaction(tx, {
+    skipPreflight: true,
+  });
+
+  const vaultTransactionExecuteIx = await multisig.rpc.vaultTransactionExecute({
+    member: squadsKeypair.publicKey,
+    multisigPda,
+    transactionIndex,
+    connection,
+    feePayer: squadsKeypair,
+  });
+
+  return vaultTransactionExecuteIx;
 }
