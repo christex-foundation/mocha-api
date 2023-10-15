@@ -1,3 +1,4 @@
+import multisig from '@sqds/multisig';
 import { createClient } from '@supabase/supabase-js';
 import twilio from 'twilio';
 
@@ -61,4 +62,9 @@ export async function updateMultisigPda(phone, multisigPda) {
     .from('users')
     .update({ multisig_pda: multisigPda })
     .eq('phone', phone);
+}
+export async function getTransactionIndex(connection, multisigPda) {
+  const multisigAccount = await Multisig.fromAccountAddress(connection, multisigPda);
+  const lastTransactionIndex = multisig.utils.toBigInt(multisigAccount.transactionIndex);
+  return lastTransactionIndex + 1n;
 }

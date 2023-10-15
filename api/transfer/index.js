@@ -18,6 +18,7 @@ import BigNumber from 'bignumber.js';
 import {
   fetchMultisigPda,
   fetchWalletAddress,
+  getTransactionIndex,
   sendSMS,
   updateMultisigPda,
   validateAddress,
@@ -134,10 +135,4 @@ async function executeTransfer(connection, multisigPda, recipientAddress, amount
   });
 
   return vaultTransactionExecuteIx;
-}
-
-async function getTransactionIndex(connection, multisigPda) {
-  const multisigAccount = await Multisig.fromAccountAddress(connection, multisigPda);
-  const lastTransactionIndex = multisig.utils.toBigInt(multisigAccount.transactionIndex);
-  return lastTransactionIndex + 1n;
 }
