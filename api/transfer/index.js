@@ -34,4 +34,10 @@ const { Multisig } = multisig.accounts;
  */
 export default async function handler(request, response) {
   const connection = new Connection(clusterApiUrl('devnet'));
+
+  const { phone, recipient, amount } = request.body;
+
+  if (!phone || !recipient || !amount) {
+    response.status(400).send({ error: 'phone, recipient, and amount are required' });
+  }
 }
