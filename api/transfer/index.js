@@ -8,6 +8,7 @@ import {
   PublicKey,
   SystemProgram,
   TransactionMessage,
+  VersionedTransaction,
   clusterApiUrl,
 } from '@solana/web3.js';
 
@@ -109,6 +110,16 @@ async function executeTransfer(connection, multisigPda, recipientAddress, amount
     transactionIndex,
     member: squadsKeypair.publicKey,
   });
+
+  const message = new TransactionMessage({
+    payerKey: squadsKeypair.publicKey,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [vaultTransactionCreateIx, proposalCreateIx, proposalApproveIx],
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(message);
+
+  tx.sign([squadsKeypair]);
 }
 
 async function getTransactionIndex(connection, multisigPda) {
