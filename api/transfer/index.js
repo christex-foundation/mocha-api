@@ -40,4 +40,9 @@ export default async function handler(request, response) {
   if (!phone || !recipient || !amount) {
     response.status(400).send({ error: 'phone, recipient, and amount are required' });
   }
+
+  validatePhoneNumber(phone, response);
+
+  const recipientAddress = await fetchWalletAddress(recipient);
+  validateAddress(recipientAddress, response);
 }
