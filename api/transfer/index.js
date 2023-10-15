@@ -45,4 +45,14 @@ export default async function handler(request, response) {
 
   const recipientAddress = await fetchWalletAddress(recipient);
   validateAddress(recipientAddress, response);
+
+  const multisigPda = new PublicKey(await fetchMultisigPda(phone));
+  if (!multisigPda) {
+    response
+      .status(400)
+      .send({
+        error:
+          'no multisig pda found for phone number, you need to register before attepmting a transfer',
+      });
+  }
 }
