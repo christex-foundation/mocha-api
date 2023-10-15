@@ -120,6 +120,20 @@ async function executeTransfer(connection, multisigPda, recipientAddress, amount
   const tx = new VersionedTransaction(message);
 
   tx.sign([squadsKeypair]);
+
+  const signature = await connection.sendTransaction(tx, {
+    skipPreflight: true,
+  });
+
+  const vaultTransactionExecuteIx = await multisig.rpc.vaultTransactionExecute({
+    member: squadsKeypair.publicKey,
+    multisigPda,
+    transactionIndex,
+    connection,
+    feePayer: squadsKeypair,
+  });
+
+  return vaultTransactionExecuteIx;
 }
 
 async function getTransactionIndex(connection, multisigPda) {
