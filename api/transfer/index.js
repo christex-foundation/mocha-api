@@ -85,4 +85,12 @@ async function executeTransfer(connection, multisigPda, recipientAddress, amount
     recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
     instructions: [instruction],
   });
+
+  const transactionIndex = await getTransactionIndex(multisigPda);
+}
+
+async function getTransactionIndex(connection, multisigPda) {
+  const multisigAccount = await Multisig.fromAccountAddress(connection, multisigPda);
+  const lastTransactionIndex = multisig.utils.toBigInt(multisigAccount.transactionIndex);
+  return lastTransactionIndex + 1n;
 }
