@@ -34,7 +34,7 @@ const { Multisig } = multisig.accounts;
  * @param {import('@vercel/node').VercelResponse} response
  */
 export default async function handler(request, response) {
-  const connection = new Connection(clusterApiUrl('devnet'));
+  const connection = new Connection(`${process.env.HELIUS_API_URL}`);
 
   const { phone, recipient, amount } = request.body;
 
@@ -55,7 +55,7 @@ export default async function handler(request, response) {
     });
   }
 
-  const tx = await executeTransfer(multisigPda, recipientAddress, amount);
+  const tx = await executeTransfer(connection, multisigPda, recipientAddress, amount);
 
   const display = request.body.display;
   if (display === 'SMS') {
@@ -68,4 +68,21 @@ View this transaction: https://explorer.solana.com/tx/${tx}?cluster=devnet`;
   response.status(200).json({ tx });
 }
 
-async function executeTransfer(multisigPda, recipientAddress, amount) {}
+async function executeTransfer(connection, multisigPda, recipientAddress, amount) {
+  const [vaultPda] = multisig.getVaultPda({
+    multisigPda,
+    index: 0,
+  });
+
+  const instruction = SystemProgram.transfer({
+    fromPubkey: vaultPda,
+    toPubkey: new PublicKey(recipientAddress),
+    lamports: Number(amount) * LAMPORTS_PER_SOL,
+  });
+
+  const transactionMessage = new TransactionMessage({
+    payerKey: vaultPda,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: [instruction],
+  });
+}
