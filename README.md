@@ -2,8 +2,8 @@
 
 Welcome to MoCha's Node API repository!
 
-[Watch product demo](https://www.youtube.com/watch?v=P54KCk-C2j4)
-[Watch pitch video](https://youtu.be/0jL2TIOBOps)
+- [Watch product demo](https://www.youtube.com/watch?v=P54KCk-C2j4)
+- [Watch pitch video](https://youtu.be/0jL2TIOBOps)
 
 This Node API facilitates the interaction between the USSD server (hosted on [Africas Talking](https://africastalking.com/)) and Solana , allowing for intuitive and secure blockchain transactions via USSD.
 
