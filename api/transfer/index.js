@@ -20,7 +20,9 @@ const squadsKeypair = await getKeypairFromEnvironment('SQUADS_WALLET');
 export default async function handler(request, response) {
   const connection = new Connection(`${process.env.HELIUS_API_URL}`);
 
-  const { phone, recipient, amount } = request.body;
+  let { phone, recipient, amount, display } = request.body;
+  phone = phone.replace(/\D/g, '');
+  recipient = recipient.replace(/\D/g, '');
 
   if (!phone || !recipient || !amount) {
     response.status(400).send({ error: 'phone, recipient, and amount are required' });
@@ -47,7 +49,6 @@ export default async function handler(request, response) {
     squadsKeypair,
   );
 
-  const display = request.body.display;
   if (display === 'SMS') {
     const smsBody = `Transfer of ${amount} SOL to ${recipient} is complete. 
 
